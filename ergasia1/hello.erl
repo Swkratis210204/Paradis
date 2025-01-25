@@ -22,10 +22,30 @@ eval(_) ->
     error.
 
 %--------------------------------------------------------
+
+eval(_, B) when not is_map(B) ->
+    {error, variable_not_found};
 eval(A, B) when is_map(B) ->
-    Size=maps:size(B),
+    Size = maps:size(B),
     case Size of
-        0->eval(A)
+        0 -> eval(A);
+        _ -> 
+            {First, Second, Third} = A,
+            case {maps:is_key(Second, B), maps:is_key(Third, B)} of
+                {true, true} ->
+                    ValueSecond = maps:get(Second, B),
+                    ValueThird = maps:get(Third, B),
+                    UpdatedA = {First, ValueSecond, ValueThird},
+                    eval(UpdatedA);
+                {true, false} ->
+                    {error, variable_not_found};
+                {false,true} ->
+                    {error,variable_not_found}
+            end
     end.
+
+
+
+
 
 
