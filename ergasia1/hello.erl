@@ -1,6 +1,6 @@
 -module(hello).
--export([add/2, sub/2, mul/2, divi/2, eval/1, eval/2]).
-
+-export([add/2, sub/2, mul/2, divi/2, eval/1, eval/2,map/2,filter/2]).
+%-------------------------------1------------------------------------------
 % Basic arithmetic functions
 add(A, B) -> A + B.
 sub(A, B) -> A - B.
@@ -22,7 +22,7 @@ eval({Fun, A, B}) when is_tuple(B) ->
     end;
 eval(_) -> {error, variable_not_found}.
 
-% Evaluate with variables in a map
+%---------------------------------2----------------------------------------
 eval({Fun, A, B}, Map) when is_map(Map) ->
     ResolvedA = resolve(A, Map),
     ResolvedB = resolve(B, Map),
@@ -33,7 +33,6 @@ eval({Fun, A, B}, Map) when is_map(Map) ->
     end;
 eval(_, _) -> {error, variable_not_found}.
 
-% Helper function to resolve a value
 resolve(Value, Map) when is_tuple(Value) ->
     eval(Value, Map);
 resolve(Value, Map) ->
@@ -42,3 +41,33 @@ resolve(Value, Map) ->
         false when is_integer(Value) -> {ok, Value};
         false -> {error, variable_not_found}
     end.
+%--------------------------------3A-----------------------------------------
+map(Fun, _) when not is_function(Fun) ->
+    {error, not_function};
+
+map(_,L) when not is_list(L)->
+    {error, not_List};
+map(_, []) ->  
+    [];
+
+map(Fun, [H|T]) ->
+    NH = Fun(H),      
+    NL = map(Fun, T),    
+    [NH | NL].
+%--------------------------------3B-----------------------------------------
+filter(Fun, _) when not is_function(Fun) ->
+    {error, not_function};
+
+filter(_, L) when not is_list(L) ->
+    {error, not_List};
+filter(_, []) ->  
+    [];
+
+filter(Fun, [H|T]) ->
+    NH = Fun(H),
+    NL=filter(Fun,T),
+    case NH of
+        true->[H | NL];
+        false->filter(Fun, T)
+    end.
+%--------------------------------3C-----------------------------------------
