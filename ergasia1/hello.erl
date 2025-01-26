@@ -1,5 +1,5 @@
 -module(hello).
--export([add/2, sub/2, mul/2, divi/2, eval/1, eval/2,map/2,filter/2]).
+-export([add/2, sub/2, mul/2, divi/2, eval/1, eval/2,map/2,filter/2,split/2]).
 %-------------------------------1------------------------------------------
 % Basic arithmetic functions
 add(A, B) -> A + B.
@@ -71,3 +71,18 @@ filter(Fun, [H|T]) ->
         false->filter(Fun, T)
     end.
 %--------------------------------3C-----------------------------------------
+split(Fun, _) when not is_function(Fun) ->
+    {error, not_function};
+
+split(_, L) when not is_list(L) ->
+    {error, not_list};
+
+split(_, []) ->
+    {[], []};  
+
+split(Fun, [H|T]) ->
+    {FalseList, TrueList} = split(Fun, T),  
+    case Fun(H) of
+        true -> {[H | FalseList], TrueList};  
+        false -> {FalseList, [H | TrueList]}  
+    end.
