@@ -1,4 +1,4 @@
--module(hello).
+-module(task1).
 -export([add/2, sub/2, mul/2, divi/2, eval/1, eval/2,map/2,filter/2,split/2,groupby/2]).
 %-------------------------------1------------------------------------------
 add(A, B) -> A + B.
@@ -6,8 +6,11 @@ sub(A, B) -> A - B.
 mul(A, B) -> A * B.
 divi(A, B) -> A div B.
 
-eval({Fun, A, B}) when is_integer(A), is_integer(B) ->
-    {ok, Fun(A,B)};
+eval({Fun, A, B}) when is_atom(Fun), is_integer(A), is_integer(B) ->
+    case erlang:function_exported(task1, Fun, 2) of
+        true -> {ok, apply(task1, Fun, [A, B])};
+        false -> {error, invalid_function}
+    end;
 eval({Fun, A, B}) when is_tuple(A) ->
     case eval(A) of
         {ok, ResA} -> eval({Fun, ResA, B});
@@ -18,30 +21,24 @@ eval({Fun, A, B}) when is_tuple(B) ->
         {ok, ResB} -> eval({Fun, A, ResB});
         Error -> Error
     end;
-eval(_) -> {error, variable_not_found}.
+eval(_) ->
+    {error, invalid_input}.
 
 %---------------------------------2----------------------------------------
-eval(_, Map) when not is_map(Map) -> 
-    {error, there_is_no_map};
+eval({Fun, A, B}, Map) ->
+    case {resolve(A, Map), resolve(B, Map)} of
+        {{ok, ValA}, {ok, ValB}} -> {ok, apply(task1, Fun, [ValA, ValB])};
+        {Error = {error, _}, _} -> Error;
+        {_, Error = {error, _}} -> Error
+    end;
+eval(_, _) -> {error, invalid_arguments}.
 
-eval(Fun, _) when not is_function(Fun) -> 
-    {error, there_is_no_function};
-
-eval({Fun, A, B}, Map) when is_map(Map) ->
-    ResolvedA = resolve(A, Map),
-    ResolvedB = resolve(B, Map),
-    case {ResolvedA, ResolvedB} of
-        {{ok, ValA}, {ok, ValB}} -> eval({Fun, ValA, ValB});
-        {{error, _} = Error, _} -> Error;
-        {_, {error, _} = Error} -> Error
-    end.
-
-resolve(Value, Map) when is_tuple(Value) ->
-    eval(Value, Map);
+resolve(Value, _) when is_number(Value) -> {ok, Value};
+resolve({Fun, A, B}, Map) -> eval({Fun, A, B}, Map);
 resolve(Value, Map) ->
-    case maps:is_key(Value, Map) of
-        true -> {ok, maps:get(Value, Map)};
-        false -> {error, variable_not_found}
+    case maps:get(Value, Map, undefined) of
+        undefined -> {error, variable_not_found};
+        Val -> {ok, Val}
     end.
 
 %--------------------------------3A-----------------------------------------
