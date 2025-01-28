@@ -7,10 +7,7 @@ mul(A, B) -> A * B.
 divi(A, B) -> A div B.
 
 eval({Fun, A, B}) when is_atom(Fun), is_integer(A), is_integer(B) ->
-    case erlang:function_exported(task1, Fun, 2) of
-        true -> {ok, apply(task1, Fun, [A, B])};
-        false -> {error, invalid_function}
-    end;
+    {ok, apply(task1, Fun, [A, B])};
 eval({Fun, A, B}) when is_tuple(A) ->
     case eval(A) of
         {ok, ResA} -> eval({Fun, ResA, B});
@@ -97,9 +94,10 @@ groupby(Fun, List) ->
     groupby(Fun, List, 1, #{negative => [], positive => [], zero => []}).
 
 groupby(_, [], _, Acc) ->
-    Acc; 
+    Acc;
 
 groupby(Fun, [H | T], Index, Acc) ->
     Key = Fun(H),
-    UpdatedAcc = maps:update_with(Key, fun(L) -> [Index | L] end, [Index], Acc),
+    UpdatedAcc = maps:update_with(Key, fun(L) -> L ++ [Index] end, [Index], Acc),
     groupby(Fun, T, Index + 1, UpdatedAcc).
+
