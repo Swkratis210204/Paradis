@@ -84,20 +84,21 @@ split(Fun, [H|T]) ->
         false -> {FalseList, [H | TrueList]}  
     end.
 %--------------------------------3D-----------------------------------------
-groupby(Fun, _) when not is_function(Fun) ->
+groupby(Fun, _) when not is_function(Fun) -> 
     {error, not_function};
 
-groupby(_, L) when not is_list(L) ->
+groupby(_, L) when not is_list(L) -> 
     {error, not_list};
 
-groupby(Fun, List) ->
-    groupby(Fun, List, 1, #{negative => [], positive => [], zero => []}).
+groupby(Fun, List) -> 
+    groupby(Fun, List, 1, #{}).
 
-groupby(_, [], _, Acc) ->
+groupby(_, [], _, Acc) -> 
     Acc;
 
-groupby(Fun, [H | T], Index, Acc) ->
+groupby(Fun, [H | T], Index, Acc) -> 
     Key = Fun(H),
     UpdatedAcc = maps:update_with(Key, fun(L) -> L ++ [Index] end, [Index], Acc),
     groupby(Fun, T, Index + 1, UpdatedAcc).
+
 
