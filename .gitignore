@@ -1,2 +1,5 @@
 test.erl
 test.beam
+gather.erl
+gen_server1.erl
+nameserver.erl
