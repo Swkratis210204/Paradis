@@ -1,58 +1,50 @@
 -module(bank).
 -export([start/0, balance/2, deposit/3, withdraw/3, lend/4]).
 
-%% Start the bank server and return its PID
-start() ->
-    spawn(fun() -> server(#{}) end).
+start() -> spawn(fun() -> server(#{}) end).
 
-%% Server loop that manages accounts as a map
 server(Balances) ->
     receive
-        {From, {balance, Account}} ->
-            Response = case maps:find(Account, Balances) of
+        {From, Ref, {balance, Acc}} ->
+            Response = case maps:find(Acc, Balances) of
                 error -> no_account;
-                {ok, Amount} -> {ok, Amount}
+                {ok, Amt} -> {ok, Amt}
             end,
-            From ! Response,
+            From ! {Ref, Response},
             server(Balances);
-
-        {From, {deposit, Account, Amount}} when is_number(Amount), Amount >= 0 ->
-            NewBalances = Balances#{Account => maps:get(Account, Balances, 0) + Amount},
-            From ! {ok, maps:get(Account, NewBalances)},
+        {From, Ref, {deposit, Acc, Amt}} when Amt >= 0 ->
+            NewBalances = Balances#{Acc => maps:get(Acc, Balances, 0) + Amt},
+            From ! {Ref, {ok, maps:get(Acc, NewBalances)}},
             server(NewBalances);
-
-        {From, {withdraw, Account, Amount}} when is_number(Amount), Amount > 0 ->
-            case maps:find(Account, Balances) of
-                error -> From ! no_account, server(Balances);
-                {ok, CurrentBalance} when CurrentBalance >= Amount ->
-                    NewBalances = Balances#{Account => CurrentBalance - Amount},
-                    From ! {ok, CurrentBalance - Amount},
+        {From, Ref, {withdraw, Acc, Amt}} when Amt > 0 ->
+            case maps:find(Acc, Balances) of
+                {ok, Bal} when Bal >= Amt ->
+                    NewBalances = Balances#{Acc => Bal - Amt},
+                    From ! {Ref, {ok, Bal - Amt}},
                     server(NewBalances);
-                _ -> From ! insufficient_funds, server(Balances)
+                error -> From ! {Ref, no_account}, server(Balances);
+                _ -> From ! {Ref, insufficient_funds}, server(Balances)
             end;
-
-        {From, {lend, FromAcc, ToAcc, Amount}} when is_number(Amount), Amount > 0 ->
+        {From, Ref, {lend, FromAcc, ToAcc, Amt}} when Amt > 0 ->
             case {maps:find(FromAcc, Balances), maps:find(ToAcc, Balances)} of
-                {error, error} -> From ! {no_account, both}, server(Balances);
-                {error, _} -> From ! {no_account, FromAcc}, server(Balances);
-                {_, error} -> From ! {no_account, ToAcc}, server(Balances);
-                {{ok, FromBal}, {ok, ToBal}} when FromBal >= Amount ->
-                    NewBalances = Balances#{FromAcc => FromBal - Amount, ToAcc => ToBal + Amount},
-                    From ! ok,
+                {error, error} -> From ! {Ref, {no_account, both}}, server(Balances);
+                {error, _} -> From ! {Ref, {no_account, FromAcc}}, server(Balances);
+                {_, error} -> From ! {Ref, {no_account, ToAcc}}, server(Balances);
+                {{ok, FromBal}, {ok, ToBal}} when FromBal >= Amt ->
+                    NewBalances = Balances#{FromAcc => FromBal - Amt, ToAcc => ToBal + Amt},
+                    From ! {Ref, ok},
                     server(NewBalances);
-                _ -> From ! insufficient_funds, server(Balances)
+                _ -> From ! {Ref, insufficient_funds}, server(Balances)
             end;
-
-        _ -> server(Balances) % Ignore invalid messages
+        _ -> server(Balances)
     end.
 
-%% Client-side functions with monitoring
-balance(Pid, Account) ->
+call(Pid, Msg) ->
     Ref = make_ref(),
     Monitor = erlang:monitor(process, Pid),
-    Pid ! {self(), {balance, Account}},
+    Pid ! {self(), Ref, Msg},
     receive
-        Response ->
+        {Ref, Response} ->
             erlang:demonitor(Monitor, [flush]),
             Response
     after 1000 ->
@@ -60,41 +52,7 @@ balance(Pid, Account) ->
         no_bank
     end.
 
-deposit(Pid, Account, Amount) ->
-    Ref = make_ref(),
-    Monitor = erlang:monitor(process, Pid),
-    Pid ! {self(), {deposit, Account, Amount}},
-    receive
-        Response ->
-            erlang:demonitor(Monitor, [flush]),
-            Response
-    after 1000 ->
-        erlang:demonitor(Monitor, [flush]),
-        no_bank
-    end.
-
-withdraw(Pid, Account, Amount) ->
-    Ref = make_ref(),
-    Monitor = erlang:monitor(process, Pid),
-    Pid ! {self(), {withdraw, Account, Amount}},
-    receive
-        Response ->
-            erlang:demonitor(Monitor, [flush]),
-            Response
-    after 1000 ->
-        erlang:demonitor(Monitor, [flush]),
-        no_bank
-    end.
-
-lend(Pid, FromAcc, ToAcc, Amount) ->
-    Ref = make_ref(),
-    Monitor = erlang:monitor(process, Pid),
-    Pid ! {self(), {lend, FromAcc, ToAcc, Amount}},
-    receive
-        Response ->
-            erlang:demonitor(Monitor, [flush]),
-            Response
-    after 1000 ->
-        erlang:demonitor(Monitor, [flush]),
-        no_bank
-    end.
+balance(Pid, Acc) -> call(Pid, {balance, Acc}).
+deposit(Pid, Acc, Amt) -> call(Pid, {deposit, Acc, Amt}).
+withdraw(Pid, Acc, Amt) -> call(Pid, {withdraw, Acc, Amt}).
+lend(Pid, FromAcc, ToAcc, Amt) -> call(Pid, {lend, FromAcc, ToAcc, Amt}).
