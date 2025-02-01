@@ -6,14 +6,15 @@ start() ->
 
 double() ->
     receive
-        {Pid, Ref, N} ->  % Accept any input and let badarith occur naturally
-            Pid ! {Ref, 2 * N},
+        {Pid, Ref, N} ->  
+            Result = 2 * N,  %% This line will crash if N is not a number
+            Pid ! {Ref, Result},
             double()
     end.
 
-% double(N) when is_integer(N) ->
-%     receive
-%         {Pid, Ref} when is_integer(N) -> 
-%             Pid ! {Ref, 2 * N},
-%             double()
-%     end.
+double(N) when is_integer(N) ->
+    receive
+        {Pid, Ref} when is_integer(N) -> 
+            Pid ! {Ref, 2 * N},
+            double()
+    end.
