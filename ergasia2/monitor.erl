@@ -1,21 +1,12 @@
 -module(monitor).
 -export([start/0, monitor_loop/1, start_double/0]).
 
-start() ->
-    spawn(fun() ->
-        process_flag(trap_exit, true), %% Suppress crash reports
-        DoublePid = start_double(),
-        monitor_loop(DoublePid)
-    end).
+start() -> spawn(fun() -> process_flag(trap_exit, true), monitor_loop(start_double()) end).
 
-start_double() ->
-    {Pid, _MonitorRef} = spawn_monitor(fun double:double/0), %% Monitor instead of linking
+start_double() -> 
+    {Pid, _} = spawn_monitor(fun double:double/0),
     register(double, Pid),
     Pid.
 
-monitor_loop(DoublePid) ->
-    receive
-        {'DOWN', _MonitorRef, process, DoublePid, _Reason} -> %% Silent exit detection
-            NewPid = start_double(),
-            monitor_loop(NewPid)
-    end.
+monitor_loop(Pid) ->
+    receive {'DOWN', _, process, Pid, _} -> monitor_loop(start_double()) end.
