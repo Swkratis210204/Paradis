@@ -7,8 +7,8 @@ server(Balances) ->
     receive
         {From, Ref, {balance, Acc}} ->
             Response = case maps:find(Acc, Balances) of
-                error -> no_account;
-                {ok, Amt} -> {ok, Amt}
+                {ok, Amt} -> {ok, Amt};
+                error -> no_account
             end,
             From ! {Ref, Response},
             server(Balances);
@@ -41,16 +41,9 @@ server(Balances) ->
 
 call(Pid, Msg) ->
     Ref = make_ref(),
-    Monitor = erlang:monitor(process, Pid),
+    erlang:monitor(process, Pid),
     Pid ! {self(), Ref, Msg},
-    receive
-        {Ref, Response} ->
-            erlang:demonitor(Monitor, [flush]),
-            Response
-    after 1000 ->
-        erlang:demonitor(Monitor, [flush]),
-        no_bank
-    end.
+    receive {Ref, Response} -> Response after 1000 -> no_bank end.
 
 balance(Pid, Acc) -> call(Pid, {balance, Acc}).
 deposit(Pid, Acc, Amt) -> call(Pid, {deposit, Acc, Amt}).
