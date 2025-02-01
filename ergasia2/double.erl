@@ -14,10 +14,10 @@ double() ->
 double(N) ->
     Ref = make_ref(),
     case whereis(double) of
-        undefined -> 
-            timer:sleep(100),
-            double(N);
         Pid -> 
             Pid ! {self(), Ref, N},
-            receive {Ref, Result} -> Result after 1000 -> double(N) end
+            receive 
+                {Ref, Result} -> Result 
+            after 1000 -> double(N) 
+            end
     end.
