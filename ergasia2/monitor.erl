@@ -16,7 +16,6 @@ start_double() ->
 monitor_loop(DoublePid) ->
     receive
         {'DOWN', _MonitorRef, process, DoublePid, _Reason} -> %% Silent exit detection
-            io:format("Restarting double process due to crash~n"),
             NewPid = start_double(),
             monitor_loop(NewPid)
     end.
