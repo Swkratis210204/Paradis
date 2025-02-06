@@ -41,9 +41,9 @@ server(Balances) ->
 
 call(Pid, Msg) ->
     Ref = make_ref(),
-    erlang:monitor(process, Pid),
+    monitor(process, Pid),
     Pid ! {self(), Ref, Msg},
-    receive {Ref, Response} -> Response after 1000 -> no_bank end.
+    receive {Ref, Response} -> Response end.
 
 balance(Pid, Acc) -> call(Pid, {balance, Acc}).
 deposit(Pid, Acc, Amt) -> call(Pid, {deposit, Acc, Amt}).

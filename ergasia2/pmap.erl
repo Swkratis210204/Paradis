@@ -3,8 +3,8 @@
 
 worker(Parent, Fun) ->
     receive
-        {Index, Value} -> Parent ! {Index, Fun(Value)}, worker(Parent, Fun); % Ordered execution
-        Value -> Parent ! Fun(Value), worker(Parent, Fun) % Unordered execution
+        {Index, Value} -> Parent ! {Index, Fun(Value)}, worker(Parent, Fun); 
+        Value -> Parent ! Fun(Value), worker(Parent, Fun) 
     end.
 %--------------------------------
 unordered(Fun, List) ->
