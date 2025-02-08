@@ -1,30 +1,29 @@
 -module(ring).
--export([start/2, loop/1]).
+-export([start/2, process_loop/1]).
 
-start(N, M) ->
-    Pids = create_processes(N),
-    % Start the message passing with the first process
-    hd(Pids) ! {message, 0, M * N, Pids},
+start(N, M) when N > 1, M > 0 ->
+    Sum = N * M,  % Compute the target sum at the start
+    FirstPid = spawn(?MODULE, process_loop, [undefined]),
+    LastPid = spawn_ring(N - 1, FirstPid, FirstPid),
+    FirstPid ! {init, LastPid},  
+    FirstPid ! {start, Sum, M},  
+    ok.
+
+spawn_ring(1, PrevPid, FirstPid) ->
+    Pid = spawn(?MODULE, process_loop, [PrevPid]),
+    Pid ! {init, FirstPid},
+    Pid;
+spawn_ring(N, PrevPid, FirstPid) when N > 1 ->
+    Pid = spawn(?MODULE, process_loop, [PrevPid]),
+    spawn_ring(N - 1, Pid, FirstPid).
+
+process_loop(NextPid) ->
     receive
-        {done, Result} ->
-            Result
-    end.
-
-create_processes(N) ->
-    create_processes(N, []).
-
-create_processes(0, Pids) ->
-    lists:reverse(Pids);
-create_processes(N, Pids) ->
-    Pid = spawn(ring, loop, [self()]),
-    create_processes(N - 1, [Pid | Pids]).
-
-loop(Parent) ->
-    receive
-        {message, Value, 0, _} ->
-            Parent ! {done, Value};
-        {message, Value, M, [NextPid | Rest]} ->
-            NewValue = Value + 1,
-            NextPid ! {message, NewValue, M - 1, Rest ++ [self()]},
-            loop(Parent)
+        {init, NewNextPid} ->
+            process_loop(NewNextPid);
+        {start, _, 0} ->  
+            exit(normal);
+        {start, Sum, M} when M > 0 -> 
+            NextPid ! {start, Sum, M - 1}, 
+            process_loop(NextPid)
     end.
