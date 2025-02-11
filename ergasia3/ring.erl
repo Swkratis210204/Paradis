@@ -1,36 +1,36 @@
 -module(ring).
--export([start/2, process_loop/2]).
+-export([start/2, process_loop/3]).
 
 start(N, M) when N >= 1, M > 0 ->
-    Parent = self(),  % Store parent process to send the final result
-    FirstPid = spawn(?MODULE, process_loop, [Parent, undefined]),  
-    LastPid = spawn_ring(N - 1, Parent, FirstPid, FirstPid),  
+    Parent = self(), 
+    FirstPid = spawn(?MODULE, process_loop, [Parent, undefined, N]),  
+    LastPid = spawn_ring(N - 1, Parent, FirstPid, FirstPid, N),  
     FirstPid ! {init, LastPid},  
-    FirstPid ! {start, 0, N * M},  % Start message with 0, expecting final result N * M
+    FirstPid ! {start, 0, M}, 
 
     receive
         {final_result, Result} ->
-            Result  % Return the final sum
+            Result
     end;
 start(_, _) ->
     {error, invalid_parameters}.
 
-spawn_ring(1, Parent, PrevPid, FirstPid) ->
-    Pid = spawn(?MODULE, process_loop, [Parent, PrevPid]),
+spawn_ring(1, Parent, PrevPid, FirstPid, N) ->
+    Pid = spawn(?MODULE, process_loop, [Parent, PrevPid, N]),
     Pid ! {init, FirstPid},
     Pid;
-spawn_ring(N, Parent, PrevPid, FirstPid) when N > 1 ->
-    Pid = spawn(?MODULE, process_loop, [Parent, PrevPid]),
-    spawn_ring(N - 1, Parent, Pid, FirstPid).
+spawn_ring(N, Parent, PrevPid, FirstPid, TotalN) when N > 1 ->
+    Pid = spawn(?MODULE, process_loop, [Parent, PrevPid, TotalN]),
+    spawn_ring(N - 1, Parent, Pid, FirstPid, TotalN).
 
-process_loop(Parent, NextPid) ->
+process_loop(Parent, NextPid, N) ->
     receive
         {init, NewNextPid} ->
-            process_loop(Parent, NewNextPid);
+            process_loop(Parent, NewNextPid, N);
         {start, Value, Target} when Value < Target ->
-            NextPid ! {start, Value + 1, Target},  % Increment value
-            process_loop(Parent, NextPid);
-        {start, Target, Target} ->  % Final value reached
-            Parent ! {final_result, Target},  % Send final result to parent
+            NextPid ! {start, Value + 1, Target},  
+            process_loop(Parent, NextPid, N);
+        {start, Target, Target} ->  
+            Parent ! {final_result, Target * N},
             exit(normal)
     end.
