@@ -52,5 +52,4 @@ handle_call({lend, FromAcc, ToAcc, Amt}, _From, Balances) when Amt > 0 ->
     end.
 
 handle_cast(_, State) -> {noreply, State}.
-
 terminate(_Reason, _State) -> ok.
