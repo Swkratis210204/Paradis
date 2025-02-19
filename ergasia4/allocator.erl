@@ -23,8 +23,8 @@ allocator(Resources) ->
                     From ! {granted, ReqResources},
                     allocator(NewResources);
                 false ->
-                    receive after 100 -> ok end, % Avoid busy waiting
-                    allocator(Resources) % Keep waiting
+                    receive after 100 -> ok end, 
+                    allocator(Resources) 
             end;
         {release, ReleasedResources} ->
             NewResources = release_resources(Resources, ReleasedResources),

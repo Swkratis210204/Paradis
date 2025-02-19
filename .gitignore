@@ -4,3 +4,5 @@ gather.erl
 gen_server1.erl
 nameserver.erl
 rw.erl
+test.java
+test.class

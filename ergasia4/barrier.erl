@@ -1,38 +1,26 @@
 -module(barrier).
 -export([start/1, wait/2]).
 
-start(Refs) ->
-    spawn(fun() -> barrier(Refs, [], maps:new()) end).
+start(Expected) ->
+    spawn(fun() -> barrier(Expected, []) end).
 
-wait(Barrier, Ref) ->
-    Barrier ! {arrive, Ref, self()},
+wait(Barrier, Pid) ->
+    Barrier ! {arrive, Pid},
     receive
-        {continue, Ref} -> ok
-    after 0 -> ok
+        continue -> ok
     end.
 
-barrier(Expected, Arrived, Waiting) ->
+barrier(Expected, Arrived) ->
     receive
-        {arrive, Ref, Pid} ->
-            case lists:member(Ref, Expected) of
-                true ->
-                    NewArrived = [Ref | Arrived],
-                    NewWaiting = maps:put(Pid, Ref, Waiting),
-                    SortedExpected = lists:sort(Expected),
-                    SortedArrived = lists:sort(NewArrived),
-                    case SortedArrived == SortedExpected of
-                        true -> notify_clients(maps:to_list(NewWaiting));
-                        false -> barrier(Expected, NewArrived, NewWaiting)
-                    end;
-                false -> 
-                    Pid ! {continue, Ref},
-                    barrier(Expected, Arrived, Waiting)
+        {arrive, Pid} ->
+            NewArrived = [Pid | Arrived],
+            case NewArrived == Expected of
+                true -> notify_clients(NewArrived);
+                false -> barrier(Expected, NewArrived)
             end
     end.
 
-
-notify_clients([]) ->
-    done;
-notify_clients([{Pid, Ref} | Rest]) ->
-    Pid ! {continue, Ref},
+notify_clients([]) -> done;
+notify_clients([Pid | Rest]) ->
+    Pid ! continue,
     notify_clients(Rest).
