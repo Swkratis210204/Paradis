@@ -8,11 +8,22 @@ public class Factorizer {
         System.out.println("Give the product of two prime numbers:");
         BigInteger product = in.nextBigInteger();
 
+        if (isPrime(product)) {
+            System.out.println("No factorization possible");
+            in.close();
+            return;
+        }
+
         System.out.println("Give the number of threads:");
         int numOfThreads = in.nextInt();
 
+        long startTime = System.currentTimeMillis();
+
         Mythreads myThreads = new Mythreads(product, numOfThreads);
         myThreads.startThreads();
+
+        long endTime = System.currentTimeMillis(); // End time measurement
+        System.out.println("Execution Time: " + (endTime - startTime) + " ms");
 
         in.close();
     }
@@ -29,12 +40,11 @@ public class Factorizer {
         }
 
         public void startThreads() {
-            System.out.println("Starting threads for factorization...");
             BigInteger baseSize = this.product.divide(BigInteger.valueOf(numOfThreads));
             BigInteger remainder = this.product.remainder(BigInteger.valueOf(numOfThreads));
 
-            BigInteger start = BigInteger.TWO; // Ensure we never start from 1
-            BigInteger maxLimit = product.subtract(BigInteger.ONE); // Ensure end doesn't go beyond product - 1
+            BigInteger start = BigInteger.TWO;
+            BigInteger maxLimit = product.subtract(BigInteger.ONE);
 
             for (int i = 0; i < numOfThreads; i++) {
                 BigInteger end = start.add(baseSize).subtract(BigInteger.ONE);
@@ -43,7 +53,6 @@ public class Factorizer {
                     end = end.add(BigInteger.ONE);
                 }
 
-                // Ensure end does NOT exceed product - 1
                 if (end.compareTo(maxLimit) > 0) {
                     end = maxLimit;
                 }
@@ -74,14 +83,11 @@ public class Factorizer {
     public static ArrayList<BigInteger> findPrime(BigInteger min, BigInteger max, BigInteger product) {
         BigInteger number = min;
 
-        System.out.println("Searching for factors in range: " + min + " to " + max);
-
-        while (number.compareTo(max) <= 0) { // Keep <= since max is now bounded properly
+        while (number.compareTo(max) <= 0) {
             if (product.remainder(number).equals(BigInteger.ZERO)) {
                 BigInteger factor1 = number;
                 BigInteger factor2 = product.divide(factor1);
 
-                // Ensure neither factor is 1 or the product itself
                 if (!factor1.equals(BigInteger.ONE) && !factor2.equals(BigInteger.ONE) &&
                     !factor1.equals(product) && !factor2.equals(product)) {
                     
@@ -99,5 +105,17 @@ public class Factorizer {
 
         System.out.println("No valid factors found in range: " + min + " to " + max);
         return new ArrayList<>();
+    }
+
+    public static boolean isPrime(BigInteger num) {
+        if (num.compareTo(BigInteger.TWO) < 0) return false;
+        if (num.equals(BigInteger.TWO)) return true;
+        if (num.mod(BigInteger.TWO).equals(BigInteger.ZERO)) return false;
+        
+        BigInteger sqrt = num.sqrt().add(BigInteger.ONE);
+        for (BigInteger i = BigInteger.valueOf(3); i.compareTo(sqrt) <= 0; i = i.add(BigInteger.TWO)) {
+            if (num.mod(i).equals(BigInteger.ZERO)) return false;
+        }
+        return true;
     }
 }
