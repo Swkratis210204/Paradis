@@ -4,7 +4,6 @@ import java.math.BigInteger;
 import java.util.Scanner;
 
 public class Factorizer {
-
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
@@ -21,9 +20,10 @@ public class Factorizer {
         int numOfThreads = scanner.nextInt();
         scanner.close();
 
+        int effectiveThreads = Math.min(numOfThreads, product.sqrt().intValue()); // Avoid excessive threads
         long startTime = System.currentTimeMillis();
 
-        FactorizationThreads factorizationThreads = new FactorizationThreads(product, numOfThreads);
+        FactorizationThreads factorizationThreads = new FactorizationThreads(product, effectiveThreads);
         factorizationThreads.startThreads();
 
         long endTime = System.currentTimeMillis();
@@ -34,7 +34,7 @@ public class Factorizer {
         BigInteger number = min;
 
         while (number.compareTo(product) < 0) {
-            if (Thread.currentThread().isInterrupted()) return null; // Stop if interrupted
+            if (Thread.currentThread().isInterrupted()) return null;
 
             if (product.remainder(number).equals(BigInteger.ZERO)) {
                 BigInteger factor1 = number;
@@ -67,7 +67,7 @@ class FactorizationThreads {
     private final Thread[] threads;
     private final int numOfThreads;
     private final BigInteger product;
-    private volatile boolean found; 
+    private volatile boolean found;
 
     public FactorizationThreads(BigInteger product, int numOfThreads) {
         this.threads = new Thread[numOfThreads];
@@ -77,38 +77,33 @@ class FactorizationThreads {
     }
 
     public void startThreads() {
-        BigInteger start = BigInteger.TWO;
+        for (int i = 0; i < numOfThreads; i++) {
+            if (found) break; 
 
-for (int i = 0; i < numOfThreads; i++) {
-    if (found) break; // Stop assigning threads if factors are found
+            final BigInteger threadStart = BigInteger.valueOf(i + 2);
+            final int threadId = i;
+            final BigInteger step = BigInteger.valueOf(numOfThreads);
 
-    final BigInteger threadStart = start;
-    final int threadId = i;
-    final BigInteger step = BigInteger.valueOf(numOfThreads);
-
-    threads[i] = new Thread(() -> {
-        if (!found) {
-            BigInteger[] factors = Factorizer.findPrime(threadStart, product, step);
-            if (factors != null) {
-                synchronized (this) {
-                    if (!found) {
-                        found = true;
-                        System.out.println("Thread " + threadId + " found factors: "
-                                + factors[0] + " and " + factors[1]);
-                        stopAllThreads();
+            threads[i] = new Thread(() -> {
+                if (!found) {
+                    BigInteger[] factors = Factorizer.findPrime(threadStart, product, step);
+                    if (factors != null) {
+                        synchronized (this) {
+                            if (!found) {
+                                found = true;
+                                System.out.println("Thread " + threadId + " found factors: " + factors[0] + " and " + factors[1]);
+                                stopAllThreads();
+                            }
+                        }
                     }
                 }
-            }
+            });
+
+            threads[i].start();
         }
-    });
-
-    threads[i].start();
-    start = start.add(BigInteger.ONE);
-}
-
 
         for (Thread thread : threads) {
-            if (thread != null) {
+            if (thread != null && thread.isAlive()) {
                 try {
                     thread.join();
                 } catch (InterruptedException e) {
