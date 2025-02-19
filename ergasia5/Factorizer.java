@@ -77,48 +77,35 @@ class FactorizationThreads {
     }
 
     public void startThreads() {
-        BigInteger baseSize = product.divide(BigInteger.valueOf(numOfThreads));
-        BigInteger remainder = product.remainder(BigInteger.valueOf(numOfThreads));
-
         BigInteger start = BigInteger.TWO;
-        BigInteger maxLimit = product.subtract(BigInteger.ONE);
 
-        for (int i = 0; i < numOfThreads; i++) {
-            if (found) break;
+for (int i = 0; i < numOfThreads; i++) {
+    if (found) break; // Stop assigning threads if factors are found
 
-            BigInteger end = start.add(baseSize).subtract(BigInteger.ONE);
+    final BigInteger threadStart = start;
+    final int threadId = i;
+    final BigInteger step = BigInteger.valueOf(numOfThreads);
 
-            if (BigInteger.valueOf(i).compareTo(remainder) < 0) {
-                end = end.add(BigInteger.ONE);
-            }
-
-            if (end.compareTo(maxLimit) > 0) {
-                end = maxLimit;
-            }
-
-            final BigInteger threadStart = start;
-            final int threadId = i;
-            final BigInteger step = BigInteger.valueOf(numOfThreads);
-
-            threads[i] = new Thread(() -> {
-                if (!found) {
-                    BigInteger[] factors = Factorizer.findPrime(threadStart, product, step);
-                    if (factors != null) {
-                        synchronized (this) {
-                            if (!found) {
-                                found = true;
-                                System.out.println("Thread " + threadId + " found factors: "
-                                        + factors[0] + " and " + factors[1]);
-                                stopAllThreads();
-                            }
-                        }
+    threads[i] = new Thread(() -> {
+        if (!found) {
+            BigInteger[] factors = Factorizer.findPrime(threadStart, product, step);
+            if (factors != null) {
+                synchronized (this) {
+                    if (!found) {
+                        found = true;
+                        System.out.println("Thread " + threadId + " found factors: "
+                                + factors[0] + " and " + factors[1]);
+                        stopAllThreads();
                     }
                 }
-            });
-
-            threads[i].start();
-            start = start.add(BigInteger.ONE);
+            }
         }
+    });
+
+    threads[i].start();
+    start = start.add(BigInteger.ONE);
+}
+
 
         for (Thread thread : threads) {
             if (thread != null) {
