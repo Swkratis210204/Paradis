@@ -1,16 +1,16 @@
 -module(mapreduce).
--export([test/0, test_distributed/0, mapreduce/5, mapreduce/6,spawn_mappers/5,spawn_mapper/4,spawn_reducer/2]).
+-export([test/0, test_distributed/0,spawn_mappers/5,spawn_mapper/4,spawn_reducer/2,mapreduce/5,mapreduce/6]).
 
 test() ->
     Mapper = fun (_Key, Text) -> [{Word, 1} || Word <- Text] end,
     Reducer = fun (Word, Counts) -> [{Word, lists:sum(Counts)}] end,
-    mapreduce([node()], Mapper, 2, Reducer, 3, [{a, ["hello", "world", "hello", "text"]}, {b, ["world", "a", "b", "text"]}]).
+    mapreduce(Mapper, 2, Reducer, 10, [{a, ["hello", "world", "hello", "text"]}, {b, ["world", "a", "b", "text"]}]).
 
 test_distributed() ->
     Nodes = [node() | nodes()],
     Mapper = fun (_Key, Text) -> [{Word, 1} || Word <- Text] end,
     Reducer = fun (Word, Counts) -> [{Word, lists:sum(Counts)}] end,
-    mapreduce(Nodes, Mapper, 2, Reducer, 3, [{a, ["hello", "world", "hello", "text"]}, {b, ["world", "a", "b", "text"]}]).
+    mapreduce(Nodes, Mapper, 2, Reducer, 10, [{a, ["hello", "world", "hello", "text"]}, {b, ["world", "a", "b", "text"]}]).
 
 mapreduce(Mapper, Mappers, Reducer, Reducers, Input) ->
     mapreduce([node()], Mapper, Mappers, Reducer, Reducers, Input).
