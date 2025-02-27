@@ -6,3 +6,7 @@ nameserver.erl
 rw.erl
 test.java
 test.class
+birds.erl
+birds.beam
+winds.erl
+winds.beam
