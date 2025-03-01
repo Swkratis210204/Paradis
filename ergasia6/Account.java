@@ -1,26 +1,36 @@
-// Peter Idestam-Almquist, 2023-02-26.
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 class Account {
-	// Instance variables.
-	private final int ID;
-	private int balance;
-	
-	// Constructor.
-	Account(int id, int balance) {
-		ID = id;
-		this.balance = balance;
+    private final int ID;
+    private int balance;
+    private ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+
+    // Constructor.
+    Account(int id, int balance) {
+        this.ID = id;
+        this.balance = balance;
+    }
+
+    int getId() {
+        return ID;
+    }
+
+    int getBalance() {
+		readWriteLock.readLock().lock(); 
+		try {
+			return balance;
+		} finally {
+			readWriteLock.readLock().unlock();
+		}
 	}
 	
-	// Instance methods.
-	
-	int getId() {
-		return ID;
-	}
-	
-	int getBalance() {
-		return balance;
-	}
-	
-	void setBalance(int balance) {
-		this.balance = balance;
-	}
+
+    void setBalance(int balance) {
+        readWriteLock.writeLock().lock();
+        try {
+            this.balance = balance;
+        } finally {
+            readWriteLock.writeLock().unlock();
+        }
+    }
 }
