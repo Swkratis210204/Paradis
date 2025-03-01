@@ -1,7 +1,4 @@
 // Peter Idestam-Almquist, 2023-02-26.
-
-package paradis.assignment2;
-
 import java.util.ArrayList;
 import java.util.List;
 

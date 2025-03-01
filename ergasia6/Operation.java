@@ -1,7 +1,4 @@
 // Peter Idestam-Almquist, 2023-02-26.
-
-package paradis.assignment2;
-
 class Operation implements Runnable {
 	private final int ACCOUNT_ID;
 	private final int AMOUNT;
