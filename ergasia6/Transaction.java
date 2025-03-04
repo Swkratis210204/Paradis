@@ -23,7 +23,6 @@ class Transaction implements Runnable {
     public void run() {
         if (!closed) return;
 
-        // Execute the operations.
         for (Operation operation : operations) {
             operation.run();
         }
