@@ -1,12 +1,13 @@
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 class Account {
     private final int ID;
-    private final AtomicInteger balance;
+    private volatile int balance; 
+    private final ReentrantLock lock = new ReentrantLock();
 
     Account(int id, int balance) {
         this.ID = id;
-        this.balance = new AtomicInteger(balance);
+        this.balance = balance;
     }
 
     int getId() {
@@ -14,14 +15,24 @@ class Account {
     }
 
     int getBalance() {
-        return balance.get();
+        return balance;
     }
 
     void setBalance(int balance) {
-        this.balance.set(balance);
+        lock.lock();
+        try {
+            this.balance = balance;
+        } finally {
+            lock.unlock();
+        }
     }
 
     void adjustBalance(int amount) {
-        this.balance.addAndGet(amount);
+        lock.lock();
+        try {
+            this.balance += amount;
+        } finally {
+            lock.unlock();
+        }
     }
 }

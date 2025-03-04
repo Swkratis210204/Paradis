@@ -14,6 +14,6 @@ class Operation implements Runnable {
     }
 
     public void run() {
-        account.adjustBalance(AMOUNT); // Atomic operation
+        account.adjustBalance(AMOUNT);
     }
 }

@@ -1,27 +1,23 @@
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.ArrayList;
+import java.util.List;
 
 class Transaction implements Runnable {
-    private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
-    private volatile boolean closed = false;
-    private final ReentrantLock lock = new ReentrantLock();
+    private final List<Operation> operations = new ArrayList<>();
+    private boolean closed = false;
 
-    void add(Operation operation) {
-        lock.lock();
-        try {
-            if (closed) return;
-            operations.add(operation);
-        } finally {
-            lock.unlock();
-        }
+    synchronized void add(Operation operation) {
+        if (closed) return;
+        operations.add(operation);
     }
 
-    void close() {
+    synchronized void close() {
         closed = true;
     }
 
     public void run() {
-        if (!closed) return;
+        synchronized (this) {
+            if (!closed) return;
+        }
 
         for (Operation operation : operations) {
             operation.run();
