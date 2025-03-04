@@ -1,14 +1,12 @@
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class Account {
     private final int ID;
-    private int balance;
-    private ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private final AtomicInteger balance;
 
-    // Constructor.
     Account(int id, int balance) {
         this.ID = id;
-        this.balance = balance;
+        this.balance = new AtomicInteger(balance);
     }
 
     int getId() {
@@ -16,21 +14,14 @@ class Account {
     }
 
     int getBalance() {
-		readWriteLock.readLock().lock(); 
-		try {
-			return balance;
-		} finally {
-			readWriteLock.readLock().unlock();
-		}
-	}
-	
+        return balance.get();
+    }
 
     void setBalance(int balance) {
-        readWriteLock.writeLock().lock();
-        try {
-            this.balance = balance;
-        } finally {
-            readWriteLock.writeLock().unlock();
-        }
+        this.balance.set(balance);
+    }
+
+    void adjustBalance(int amount) {
+        this.balance.addAndGet(amount);
     }
 }
