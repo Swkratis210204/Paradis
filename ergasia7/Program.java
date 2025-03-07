@@ -4,7 +4,6 @@
 public class Program {
 	final static int NUM_WEBPAGES = 40;
 	private static WebPage[] webPages = new WebPage[NUM_WEBPAGES];
-	// [You are welcome to add some variables.]
 
 	// [You are welcome to modify this method, but it should NOT be parallelized.]
 	private static void initialize() {
