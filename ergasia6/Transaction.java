@@ -1,26 +1,40 @@
-// Peter Idestam-Almquist, 2023-02-26.
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 
 class Transaction implements Runnable {
-	private List<Operation> operations = new ArrayList<Operation>();
+	private final List<Operation> operations = new CopyOnWriteArrayList<>();
 	private boolean closed = false;
-	
+	private final ReentrantLock lock = new ReentrantLock();
+
 	void add(Operation operation) {
-		if (closed) return;
-		operations.add(operation);
-	}
-	
-	void close() {
-		closed = true;
-	}
-	
-	public void run() {
-		if (!closed) return;
-		
-		// Execute the operations.
-		for (Operation operation : operations) {
-			operation.run();
+		lock.lock();
+		try {
+			if (closed) return;
+			operations.add(operation);
+		} finally {
+			lock.unlock();
 		}
 	}
-}	
+
+	void close() {
+		lock.lock();
+		try {
+			closed = true;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	public void run() {
+		lock.lock();
+		try {
+			if (!closed) return;
+			for (Operation operation : operations) {
+				operation.run();
+			}
+		} finally {
+			lock.unlock();
+		}
+	}
+}
