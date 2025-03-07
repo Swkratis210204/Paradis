@@ -1,11 +1,10 @@
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 class Account {
     private final int ID;
-    private int balance;
-    private ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private volatile int balance; 
+    private final ReentrantLock lock = new ReentrantLock();
 
-    // Constructor.
     Account(int id, int balance) {
         this.ID = id;
         this.balance = balance;
@@ -16,21 +15,24 @@ class Account {
     }
 
     int getBalance() {
-		readWriteLock.readLock().lock(); 
-		try {
-			return balance;
-		} finally {
-			readWriteLock.readLock().unlock();
-		}
-	}
-	
+        return balance;
+    }
 
     void setBalance(int balance) {
-        readWriteLock.writeLock().lock();
+        lock.lock();
         try {
             this.balance = balance;
         } finally {
-            readWriteLock.writeLock().unlock();
+            lock.unlock();
+        }
+    }
+
+    void adjustBalance(int amount) {
+        lock.lock();
+        try {
+            this.balance += amount;
+        } finally {
+            lock.unlock();
         }
     }
 }
