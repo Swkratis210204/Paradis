@@ -1,9 +1,9 @@
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 class Account {
     private final int ID;
     private volatile int balance; 
-    private final ReentrantLock lock = new ReentrantLock();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     Account(int id, int balance) {
         this.ID = id;
@@ -19,20 +19,20 @@ class Account {
     }
 
     void setBalance(int balance) {
-        lock.lock();
+        lock.readLock().lock();
         try {
             this.balance = balance;
         } finally {
-            lock.unlock();
+            lock.readLock().unlock();
         }
     }
 
     void adjustBalance(int amount) {
-        lock.lock();
+        lock.writeLock().lock();
         try {
             this.balance += amount;
         } finally {
-            lock.unlock();
+            lock.writeLock().unlock();
         }
     }
 }

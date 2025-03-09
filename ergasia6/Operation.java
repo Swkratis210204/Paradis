@@ -13,7 +13,7 @@ class Operation implements Runnable {
         return ACCOUNT_ID;
     }
 
-    public void run() {
+    synchronized public void run() {
         account.adjustBalance(AMOUNT);
     }
 }
