@@ -1,19 +1,22 @@
 import java.util.concurrent.*;
 
-public class Program1 {
+public class Program3 {
     final static int NUM_WEBPAGES = 40;
     private static WebPage[] webPages = new WebPage[NUM_WEBPAGES];
-    private static ForkJoinPool pool = ForkJoinPool.commonPool();
+    private static MyExecutor pool = new MyExecutor(3);
     private static BlockingQueue<WebPage> downloadQueue = new LinkedBlockingQueue<>(40);
     private static BlockingQueue<WebPage> analyzeQueue = new LinkedBlockingQueue<>(40);
     private static BlockingQueue<WebPage> categorizeQueue = new LinkedBlockingQueue<>(40);
 
-    static class AnalyzeTask extends RecursiveAction {
+    private static volatile int categorizedCount = 0; // 🟢 Counter to track processed webpages
+
+    static class AnalyzeTask implements Runnable {
         @Override
-        protected void compute() {
+        public void run() {
             try {
-                while (true) {
-                    WebPage webpage = downloadQueue.take(); // Changed from poll() to take()
+                while (categorizedCount < NUM_WEBPAGES) { // 🟢 Stop when all pages are categorized
+                    WebPage webpage = downloadQueue.poll(1, TimeUnit.SECONDS);
+                    if (webpage == null) continue; // 🟢 Wait for more tasks
                     webpage.analyze();
                     analyzeQueue.put(webpage);
                 }
@@ -23,14 +26,18 @@ public class Program1 {
         }
     }
 
-    static class CategorizeTask extends RecursiveAction {
+    static class CategorizeTask implements Runnable {
         @Override
-        protected void compute() {
+        public void run() {
             try {
-                while (true) {
-                    WebPage webpage = analyzeQueue.take();
+                while (categorizedCount < NUM_WEBPAGES) { // 🟢 Stop when all pages are categorized
+                    WebPage webpage = analyzeQueue.poll(1, TimeUnit.SECONDS);
+                    if (webpage == null) continue; // 🟢 Wait for more tasks
                     webpage.categorize();
                     categorizeQueue.put(webpage);
+                    synchronized (Program3.class) {
+                        categorizedCount++; // 🟢 Track completion
+                    }
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -53,11 +60,6 @@ public class Program1 {
                 Thread.currentThread().interrupt();
             }
         }
-        try {
-            downloadQueue.put(new WebPage(-1, "DONE")); // Poison pill added
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 
     private static void presentResult() {
@@ -71,19 +73,29 @@ public class Program1 {
 
         long start = System.nanoTime();
 
-        pool.execute(Program1::downloadWebPages);
+        pool.execute(Program3::downloadWebPages);
         pool.execute(new AnalyzeTask());
         pool.execute(new CategorizeTask());
-        
-        pool.shutdown(); 
+
+        // 🟢 Wait until all pages are categorized
+        while (categorizedCount < NUM_WEBPAGES) {
+            try {
+                Thread.sleep(50); // Small delay to avoid busy waiting
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        pool.shutdown();
         try {
             pool.awaitTermination(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
-        long stop = System.nanoTime();
         presentResult();
+
+        long stop = System.nanoTime();
         System.out.println("Execution time (seconds): " + (stop - start) / 1.0E9);
     }
 }
