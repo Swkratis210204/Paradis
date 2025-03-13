@@ -32,19 +32,16 @@ public class MyExecutor implements ExecutorService {
 
     @Override
     public <T> Future<T> submit(Callable<T> task) {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'submit'");
     }
 
     @Override
     public <T> Future<T> submit(Runnable task, T result) {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'submit'");
     }
 
     @Override
     public Future<?> submit(Runnable task) {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'submit'");
     }
 
@@ -54,17 +51,20 @@ public void execute(Runnable command) {
         throw new RejectedExecutionException("Executor has been shut down");
     }
     try {
-        BlockingQueue.put(command); // Add the task to the queue
+        BlockingQueue.put(command); 
     } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
     }
 }
 
 
-    @Override
     public void shutdown() {
-        isShutdown = true;
+    isShutdown = true;
+    for (Thread worker : workers) {
+        worker.interrupt(); 
     }
+}
+
 
     @Override
     public boolean isShutdown() {
@@ -92,34 +92,30 @@ public void execute(Runnable command) {
     public List<Runnable> shutdownNow() {
         isShutdown = true;
         List<Runnable> remainingTasks = new ArrayList<>();
-        BlockingQueue.drainTo(remainingTasks); // Collect remaining tasks
+        BlockingQueue.drainTo(remainingTasks);
         return remainingTasks;
     }
 
 
     @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'invokeAll'");
     }
 
     @Override
     public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
             throws InterruptedException {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'invokeAll'");
     }
 
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'invokeAny'");
     }
 
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
-        // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'invokeAny'");
     }
 }
